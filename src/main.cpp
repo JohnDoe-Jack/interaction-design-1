@@ -8,6 +8,9 @@ static IMU myIMU;
 static SlotMachine slot(myIMU);
 
 void setup() { 
+  Serial.begin(115200);
+  delay(1000);
+
   auto cfg = M5.config();
   cfg.serial_baudrate = 115200;
   M5.begin(cfg);

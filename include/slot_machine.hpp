@@ -38,7 +38,8 @@ public:
     imuRef.initIMU();
     M5.Display.setTextSize(2);
     initSlots();
-    initSound(); 
+    if(initSound()) Serial.println("Sound initialized");
+    
   }
 
   // 毎フレーム呼ばれる更新処理
