@@ -1,5 +1,6 @@
 #pragma once
 #include "imu.hpp"
+#include "sound.hpp"
 #include <M5Unified.h>
 
 class SlotMachine {
@@ -37,6 +38,7 @@ public:
     imuRef.initIMU();
     M5.Display.setTextSize(2);
     initSlots();
+    initSound(); 
   }
 
   // 毎フレーム呼ばれる更新処理
@@ -45,6 +47,7 @@ public:
 
     // 停止していない列はランダム色でアニメーション
     animateSlots();
+    loopSound();
 
     // 加速度検出でスロット停止 or リセット
     if (imuRef.updateIMU()) {
@@ -58,9 +61,11 @@ public:
         if (finished) {
           // すでに全列停止後なら再度初期化
           initSlots();
+          playSound();
         } else {
           // 次の列を停止
           stopNextSlot();
+          playSound();
         }
         M5.delay(500); // 同一動作の誤検出防止
       }
