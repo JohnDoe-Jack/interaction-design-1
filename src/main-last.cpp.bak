@@ -1,0 +1,75 @@
+#include "SD.h"
+#include <M5Unified.h>
+
+// Define the specific image path you want to display
+const char* Path_BAR = "/BAR.png";
+const char* Path_Bell = "/Bell.png";
+const char* Path_Cherries = "/Cherries.png";
+const char* Path_Horseshoe = "/Horseshoe.png";
+const char* Path_Plum = "/Plum.png";
+const char* Path_Seven = "/Seven.png";
+const char* Path_Star = "/Star.png";
+const char* Path_Watermelon = "/Watermelon.png";
+const char* Path_Wheat = "/Wheat.png";
+
+const char* Path_Display = "/display.png";
+
+const char* Path_Start = "/START.png";
+const char* Path_Spinning = "/SPINNING.png";
+const char* Path_TryAgain = "/TRY_AGAIN.png";
+const char* Path_YouWin = "/YOU_WIN.png";
+
+void displayImage(const char* filename, int x = 0, int y = 0) {
+  String path = String(filename);
+
+  Serial.printf("Displaying file: %s at position %d, %d\n", filename, x, y);
+
+  if (SD.exists(filename)) {
+    if (path.indexOf(".jpg") != -1) {
+      M5.Lcd.drawJpgFile(SD, filename, x, y);
+    } else if (path.indexOf(".png") != -1) {
+      M5.Lcd.drawPngFile(SD, filename, x, y);
+    } else {
+      Serial.println("Unsupported file format");
+    }
+  } else {
+    Serial.printf("File not found: %s\n", filename);
+  }
+}
+
+void setup() {
+  auto cfg = M5.config();
+  cfg.serial_baudrate = 115200;
+  M5.begin(cfg);
+  delay(500);
+
+  // SDカードマウント待ち
+  while (false == SD.begin(GPIO_NUM_4, SPI, 15000000)) {
+    Serial.println("SD Wait...");
+    delay(500);
+  }
+
+  // Clear the screen
+  M5.Lcd.fillScreen(BLACK);
+
+  // Display the specified image
+  // displayImage(Path_Wheat, 50, 14);
+  // displayImage(Path_Seven, 123, 14);
+  // displayImage(Path_Seven, 196, 14);
+
+  displayImage(Path_Display, 50, 83);
+  displayImage(Path_Display, 123, 83);
+  displayImage(Path_Display, 196, 83);
+
+  // displayImage(Path_Wheat, 50, 152);
+  // displayImage(Path_Seven, 123, 152);
+  // displayImage(Path_Seven, 196, 152);
+
+  displayImage(Path_Spinning, 0, 0);
+}
+
+void loop() {
+  // Nothing to do in loop since we're just displaying one image
+
+  delay(1000);
+}

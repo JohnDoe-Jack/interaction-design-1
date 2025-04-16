@@ -2,12 +2,12 @@
 #include <SD.h>
 
 class ImageManager {
-private:
+ private:
   static constexpr int MAX_FILES = 100;
   String fileList[MAX_FILES];
   int fileCount = 0;
 
-public:
+ public:
   // 画像リストを読み込む
   void loadImages() {
     fileCount = 0;
