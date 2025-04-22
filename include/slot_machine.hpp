@@ -47,6 +47,14 @@ class SlotMachine {
       : imuRef(imu), soundRef(sound), imageRef(image) {       // コンストラクタで Sound 参照を初期化
   }
 
+  // void waitEnd() { 
+  //   if (soundRef.wav) {
+  //       while (soundRef.wav->isRunning()) {
+  //           M5.delay(100);
+  //       }
+  //   }
+  // };
+
   // 初期化
   void begin() {
     soundRef.begin();
@@ -75,17 +83,28 @@ class SlotMachine {
 
       // しきい値以上の加速度を検出
       if ((ax > ACCEL_THRESHOLD) || (ay > ACCEL_THRESHOLD) || (az > ACCEL_THRESHOLD)) {
-        if (count == 3) {
+        if(count > 3) {
+          soundRef.play(BEGIN_SOUND_FILE);  // Sound クラスの play() を使用
+          initSlots();
+          count = 0;
+        }else if (count == 3) {
           // すでに全列停止後なら再度初期化
-          syms[2] = 3;  // random(0, 9);
+          syms[2] = 2;  // random(0, 9);
           imageRef.drawRandomFrame(syms[0], syms[1], syms[2]);
 
           checkWin();
 
-          // soundRef.stop();
+          // soundRef.waitEnd();  
 
-          initSlots();
-          // soundRef.isStoppedExplicitly = false;
+          // waitEnd();  // サウンドの再生が終わるまで待機
+          // M5.delay(50000);  // サウンドの再生が終わるまで待機
+
+          // soundRef.stop();  // 明示的に停止
+
+          count ++;
+          // soundRef.stop();
+          // soundRef.isStoppedExplicitly = true;
+          // initSlots();
         } else {
           // 次の列を停止
           count++;
@@ -112,9 +131,10 @@ class SlotMachine {
  private:
   // スロットを初期化（当選かどうかを決め、停止時に使う最終配置を作成）
   void initSlots() {
+    // soundRef.stop();
     // soundRef.play(BEGIN_SOUND_FILE);  // Sound クラスの play() を使用
     // delay(1000);
-    count = 0;
+    // count = 0;
     // 配列を初期化
     for (int i = 0; i < 3; ++i) {
       syms[i] = -1;
@@ -124,13 +144,15 @@ class SlotMachine {
   // 当たり判定(一例: 横/縦/斜めが揃えばtrue)
   void checkWin() {
     if (syms[0] == syms[1] && syms[1] == syms[2]) {
-      // soundRef.stop();
+      soundRef.stop();
       soundRef.play(WIN_SOUND_FILE);  // Sound クラスの play() を使用
-      M5.delay(1000);
+      // M5.delay(10000);
     } else {
-      // soundRef.stop();
+      soundRef.stop();
       soundRef.play(LOSE_SOUND_FILE);  // Sound クラスの play() を使用
-      M5.delay(1000);
+      // M5.delay(10000);
     }
   }
 };
+
+
