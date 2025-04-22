@@ -33,6 +33,7 @@ void Image::setup() {
 // 背景を描画する関数
 void Image::setBackground(const char* path) {
   bgSprite.drawPngFile(SD, path, 0, 0);
+  frameSprite.pushImage(0, 0, screenW, screenH, (uint16_t*)bgSprite.getBuffer());
 }
 
 // StartFrameを描画する関数
@@ -40,7 +41,7 @@ void Image::drawRandomFrame(int idx0, int idx1, int idx2) {
   int indices[3] = {idx0, idx1, idx2};
 
   // 背景描画（初期化）
-  frameSprite.pushImage(0, 0, screenW, screenH, (uint16_t*)bgSprite.getBuffer());
+  // frameSprite.pushImage(0, 0, screenW, screenH, (uint16_t*)bgSprite.getBuffer());
 
   for (int i = 0; i < 3; i++) {
     int idx = (indices[i] == -1) ? random(0, N_SLOTS) : indices[i];
@@ -61,9 +62,28 @@ void Image::drawRandomFrame(int idx0, int idx1, int idx2) {
 // StartFrameを描画する関数
 void Image::drawStartFrame() {
   // スタート画面を描画
-  setBackground(UI_START_base);
-  // 背景を描画
-  frameSprite.pushImage(0, 0, screenW, screenH, (uint16_t*)bgSprite.getBuffer());
+  setBackground(UI_START);
+  // 画面へ転送
+  M5.Display.pushImage(0, 0, screenW, screenH, (uint16_t*)frameSprite.getBuffer());
+}
+
+void Image::drawSpinningFrame() {
+  // スタート画面を描画
+  setBackground(UI_SPINNING);
+  // 画面へ転送
+  M5.Display.pushImage(0, 0, screenW, screenH, (uint16_t*)frameSprite.getBuffer());
+}
+
+void Image::drawWinFrame() {
+  // スタート画面を描画
+  setBackground(UI_YOU_WIN);
+  // 画面へ転送
+  M5.Display.pushImage(0, 0, screenW, screenH, (uint16_t*)frameSprite.getBuffer());
+}
+
+void Image::drawLoseFrame() {
+  // スタート画面を描画
+  setBackground(UI_TRY_AGAIN);
   // 画面へ転送
   M5.Display.pushImage(0, 0, screenW, screenH, (uint16_t*)frameSprite.getBuffer());
 }

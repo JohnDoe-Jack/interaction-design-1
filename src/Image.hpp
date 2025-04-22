@@ -16,6 +16,9 @@ class Image {
   void drawStartFrame();
   void setBackground(const char* path);
   void drawRandomFrame(const int idx0 = -1, const int idx1 = -1, const int idx2 = -1);
+  void drawSpinningFrame();
+  void drawWinFrame();
+  void drawLoseFrame();
 
  private:
   const char* UI_START_base = "/START_base.png";
