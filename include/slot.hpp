@@ -20,11 +20,17 @@ class Slot {
   static constexpr int slotH = 106;
   static constexpr int colsX[3] = {52, 126, 199};
   static constexpr int slotY = 65;
-
   static constexpr const char *SLOT_PATHS[SYMBOL_COUNT] = {
       "/slot_center_0.png", "/slot_center_1.png", "/slot_center_2.png",
       "/slot_center_3.png", "/slot_center_4.png", "/slot_center_5.png",
       "/slot_center_6.png", "/slot_center_7.png", "/slot_center_8.png"};
+
+  static constexpr float ACCEL_THRESHOLD = 2.0f;
+  static constexpr int STOP_DELAY_MS = 500;
+  static constexpr int UPDATE_DELAY_MS = 20;
+
+  int count = 0;
+  int syms[3] = {-1, -1, -1};  //-1 はランダム生成の意味
 
   // M5Canvas
   M5Canvas bgSprite{&M5.Display};
@@ -34,15 +40,6 @@ class Slot {
   IMU &imuRef;      // IMUクラス参照
   Sound &soundRef;  // Soundクラス参照
   Image &imageRef;  // Imageクラス参照
-
-  int count = 0;  // スロットのアニメーションカウント
-
-  int syms[3] = {-1, -1, -1};
-
-  // 定数定義
-  static constexpr float ACCEL_THRESHOLD = 2.0f;
-  static constexpr int STOP_DELAY_MS = 500;
-  static constexpr int UPDATE_DELAY_MS = 20;
 
  public:
   explicit Slot(IMU &imu, Sound &sound, Image &image)
