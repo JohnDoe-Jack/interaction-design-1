@@ -57,3 +57,13 @@ void Image::drawRandomFrame(int idx0, int idx1, int idx2) {
   // 合成結果を画面に描画
   M5.Display.pushImage(0, 0, screenW, screenH, (uint16_t*)frameSprite.getBuffer());
 }
+
+// StartFrameを描画する関数
+void Image::drawStartFrame() {
+  // スタート画面を描画
+  setBackground(UI_START_base);
+  // 背景を描画
+  frameSprite.pushImage(0, 0, screenW, screenH, (uint16_t*)bgSprite.getBuffer());
+  // 画面へ転送
+  M5.Display.pushImage(0, 0, screenW, screenH, (uint16_t*)frameSprite.getBuffer());
+}
