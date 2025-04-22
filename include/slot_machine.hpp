@@ -1,97 +1,94 @@
 #pragma once
 #include "imu.hpp"
-#include "sound.hpp" // Sound クラスを使うのでインクルード
+#include "sound.hpp"  // Sound クラスを使うのでインクルード
 #include <M5Unified.h>
 
 class SlotMachine {
-private:
-    static constexpr int COLS = 3; // スロット列数
-    static constexpr int ROWS = 3; // スロット行数
+ private:
+  static constexpr int COLS = 3;  // スロット列数
+  static constexpr int ROWS = 3;  // スロット行数
 
-    IMU &imuRef;        // IMUクラス参照
-    Sound &soundRef;     // Soundクラス参照
-    bool stopped[COLS]; // 各列の停止フラグ
-    bool finished;      // 全列停止後の状態フラグ
-    bool didWeWin;      // 当選フラグ
-    float mWinChance;   // 当選率
+  IMU &imuRef;         // IMUクラス参照
+  Sound &soundRef;     // Soundクラス参照
+  bool stopped[COLS];  // 各列の停止フラグ
+  bool finished;       // 全列停止後の状態フラグ
+  bool didWeWin;       // 当選フラグ
+  float mWinChance;    // 当選率
 
-    // アニメーション表示用の一時絵柄
-    uint16_t symbols[COLS][ROWS];
+  // アニメーション表示用の一時絵柄
+  uint16_t symbols[COLS][ROWS];
 
-    // 実際に停止した時に反映される最終絵柄
-    uint16_t finalSymbols[COLS][ROWS];
+  // 実際に停止した時に反映される最終絵柄
+  uint16_t finalSymbols[COLS][ROWS];
 
-    // 定数定義 (マジックナンバー、マジックストリングの解消)
-    static constexpr float ACCEL_THRESHOLD = 2.0f;
-    static constexpr int STOP_DELAY_MS = 500;
-    static constexpr int UPDATE_DELAY_MS = 50;
-    static constexpr char const *WIN_MESSAGE = "YOU WIN!!";
-    static constexpr char const *LOSE_MESSAGE = "TRY AGAIN";
+  // 定数定義 (マジックナンバー、マジックストリングの解消)
+  static constexpr float ACCEL_THRESHOLD = 2.0f;
+  static constexpr int STOP_DELAY_MS = 500;
+  static constexpr int UPDATE_DELAY_MS = 50;
+  static constexpr char const *WIN_MESSAGE = "YOU WIN!!";
+  static constexpr char const *LOSE_MESSAGE = "TRY AGAIN";
 
+ public:
+  // 当選率を指定可能なコンストラクタ
+  explicit SlotMachine(IMU &imu, Sound &sound, float chanceOfWin = 0.0f)                           // Sound クラスへの参照を追加
+      : imuRef(imu), soundRef(sound), finished(false), didWeWin(false), mWinChance(chanceOfWin) {  // コンストラクタで Sound 参照を初期化
+    for (int i = 0; i < COLS; ++i) {
+      stopped[i] = false;
+      for (int j = 0; j < ROWS; ++j) {
+        symbols[i][j] = 0;
+        finalSymbols[i][j] = 0;
+      }
+    }
+  }
 
-public:
-    // 当選率を指定可能なコンストラクタ
-    explicit SlotMachine(IMU &imu, Sound &sound, float chanceOfWin = 0.0f) // Sound クラスへの参照を追加
-        : imuRef(imu), soundRef(sound), finished(false), didWeWin(false), mWinChance(chanceOfWin) { // コンストラクタで Sound 参照を初期化
-        for (int i = 0; i < COLS; ++i) {
-            stopped[i] = false;
-            for (int j = 0; j < ROWS; ++j) {
-                symbols[i][j] = 0;
-                finalSymbols[i][j] = 0;
-            }
+  // 初期化
+  void begin() {
+    soundRef.begin();
+    soundRef.play(BEGIN_SOUND_FILE);  // Sound クラスの play() を使用
+    delay(10000);
+    imuRef.initIMU();
+    M5.Display.setTextSize(2);
+    initSlots();
+  }
+
+  // 毎フレーム呼ばれる更新処理
+  void update() {
+    M5.update();
+
+    // 停止していない列はランダム色でアニメーション
+    animateSlots();
+    soundRef.loop();
+    // delay(100);
+
+    // 加速度検出でスロット停止 or リセット
+    if (imuRef.updateIMU()) {
+      auto data = imuRef.getIMUData();
+      float ax = fabsf(data.accel.x);
+      float ay = fabsf(data.accel.y);
+      float az = fabsf(data.accel.z);
+
+      // しきい値以上の加速度を検出
+      if ((ax > ACCEL_THRESHOLD) || (ay > ACCEL_THRESHOLD) || (az > ACCEL_THRESHOLD)) {
+        if (finished) {
+          // すでに全列停止後なら再度初期化
+          soundRef.stop();
+          soundRef.play(BEGIN_SOUND_FILE);  // Sound クラスの play() を使用
+          initSlots();
+          soundRef.isStoppedExplicitly = false;
+        } else {
+          // 次の列を停止
+          soundRef.play(BOSN_SOUND_FILE);  // Sound クラスの play() を使用
+          delay(50);                       // 停止音の再生時間を考慮
+          stopNextSlot();
         }
+        M5.delay(STOP_DELAY_MS);  // 同一動作の誤検出防止
+      }
     }
 
-    // 初期化
-    void begin() {
-        soundRef.begin(); 
-        soundRef.play(BEGIN_SOUND_FILE); // Sound クラスの play() を使用
-        delay(10000);
-        imuRef.initIMU();
-        M5.Display.setTextSize(2);
-        initSlots();
-    }
+    M5.delay(UPDATE_DELAY_MS);
+  }
 
-    // 毎フレーム呼ばれる更新処理
-    void update() {
-        M5.update();
-
-        // 停止していない列はランダム色でアニメーション
-        animateSlots();
-        soundRef.loop(); 
-        // delay(100); 
-        
-
-        // 加速度検出でスロット停止 or リセット
-        if (imuRef.updateIMU()) {
-            auto data = imuRef.getIMUData();
-            float ax = fabsf(data.accel.x);
-            float ay = fabsf(data.accel.y);
-            float az = fabsf(data.accel.z);
-
-            // しきい値以上の加速度を検出
-            if ((ax > ACCEL_THRESHOLD) || (ay > ACCEL_THRESHOLD) || (az > ACCEL_THRESHOLD)) {
-                if (finished) {
-                    // すでに全列停止後なら再度初期化
-                    soundRef.stop();
-                    soundRef.play(BEGIN_SOUND_FILE); // Sound クラスの play() を使用
-                    initSlots();
-                    soundRef.isStoppedExplicitly = false; 
-                } else {
-                    // 次の列を停止
-                    soundRef.play(BOSN_SOUND_FILE); // Sound クラスの play() を使用
-                    delay(50); // 停止音の再生時間を考慮
-                    stopNextSlot();
-                }
-                M5.delay(STOP_DELAY_MS); // 同一動作の誤検出防止
-            }
-        }
-
-        M5.delay(UPDATE_DELAY_MS);
-    }
-
-
-private:
+ private:
   auto randomWinArray() -> void {
     uint16_t color = rand() % 0xFFFF;
     char array_pattern = rand() % 3;
@@ -106,24 +103,24 @@ private:
 
     // array_pattern によって揃う箇所を分岐
     switch (array_pattern) {
-    case 0:
-      // 中段がすべて同じ色
-      for (int col = 0; col < COLS; ++col) {
-        finalSymbols[col][1] = color;
-      }
-      break;
-    case 1:
-      // 左斜め (0,0 -> 1,1 -> 2,2 が同色)
-      for (int i = 0; i < COLS; ++i) {
-        finalSymbols[i][i] = color;
-      }
-      break;
-    case 2:
-      // 右斜め (0,2 -> 1,1 -> 2,0 が同色)
-      for (int i = 0; i < COLS; ++i) {
-        finalSymbols[i][COLS - 1 - i] = color;
-      }
-      break;
+      case 0:
+        // 中段がすべて同じ色
+        for (int col = 0; col < COLS; ++col) {
+          finalSymbols[col][1] = color;
+        }
+        break;
+      case 1:
+        // 左斜め (0,0 -> 1,1 -> 2,2 が同色)
+        for (int i = 0; i < COLS; ++i) {
+          finalSymbols[i][i] = color;
+        }
+        break;
+      case 2:
+        // 右斜め (0,2 -> 1,1 -> 2,0 が同色)
+        for (int i = 0; i < COLS; ++i) {
+          finalSymbols[i][COLS - 1 - i] = color;
+        }
+        break;
     }
     return;
   }
@@ -155,27 +152,27 @@ private:
     uint16_t color = rand() % 0xFFFF;
 
     switch (array_pattern) {
-    case 0: {
-      // 中段(row=1)が2つ揃い, 3つ目は別色
-      finalSymbols[0][1] = color;
-      finalSymbols[1][1] = color;
-      // 3つ目の列だけ別色に強制
-      fixCellDifferentColor(2, 1, color);
-    } break;
+      case 0: {
+        // 中段(row=1)が2つ揃い, 3つ目は別色
+        finalSymbols[0][1] = color;
+        finalSymbols[1][1] = color;
+        // 3つ目の列だけ別色に強制
+        fixCellDifferentColor(2, 1, color);
+      } break;
 
-    case 1: {
-      // 左斜め (0,0), (1,1), (2,2) のうち2つだけ同色
-      finalSymbols[0][0] = color;
-      finalSymbols[1][1] = color;
-      fixCellDifferentColor(2, 2, color);
-    } break;
+      case 1: {
+        // 左斜め (0,0), (1,1), (2,2) のうち2つだけ同色
+        finalSymbols[0][0] = color;
+        finalSymbols[1][1] = color;
+        fixCellDifferentColor(2, 2, color);
+      } break;
 
-    case 2: {
-      // 右斜め (0,2), (1,1), (2,0) のうち2つだけ同色
-      finalSymbols[0][2] = color;
-      finalSymbols[1][1] = color;
-      fixCellDifferentColor(2, 0, color);
-    } break;
+      case 2: {
+        // 右斜め (0,2), (1,1), (2,0) のうち2つだけ同色
+        finalSymbols[0][2] = color;
+        finalSymbols[1][1] = color;
+        fixCellDifferentColor(2, 0, color);
+      } break;
     }
 
     // 上記の2マス揃いだけで“3つ揃い”が発生しないように最後にチェックし、
@@ -282,19 +279,19 @@ private:
         if (col == COLS - 1) {
           // 当選設定の場合は必ず checkWin() も trueになる
           if (checkWin()) {
-            soundRef.stop(); 
-            soundRef.play(WIN_SOUND_FILE); // Sound クラスの play() を使用
-            soundRef.isStoppedExplicitly = true;
+            soundRef.stop();
+            soundRef.play(WIN_SOUND_FILE);  // Sound クラスの play() を使用
+            // soundRef.isStoppedExplicitly = true;
             M5.Display.setTextSize(3);
             M5.Display.setCursor(10, 10);
             M5.Display.printf("YOU WIN!!");
           } else {
             soundRef.stop();
-            soundRef.play(LOSE_SOUND_FILE); // Sound クラスの play() を使用
+            soundRef.play(LOSE_SOUND_FILE);  // Sound クラスの play() を使用
             M5.Display.setTextSize(3);
             M5.Display.setCursor(10, 10);
             M5.Display.printf("TRY AGAIN");
-            soundRef.isStoppedExplicitly = true;
+            // soundRef.isStoppedExplicitly = true;
           }
           finished = true;
         }
