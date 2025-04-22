@@ -1,0 +1,75 @@
+#include "SD.h"
+#include <M5Unified.h>
+
+const char* bgPath = "/START_base.png";
+const int N_SLOTS = 9;  // slot_center_0.png ～ slot_center_8.png
+
+String slotPaths[N_SLOTS];
+
+const int slotW = 70;
+const int slotH = 106;
+
+const int screenW = 320;
+const int screenH = 240;
+
+// 描画用キャンバス
+M5Canvas bgSprite(&M5.Display);
+M5Canvas slotSprite[N_SLOTS];
+M5Canvas frameSprite(&M5.Display);
+
+// スロット X 座標（左→中→右）
+const int colsX[] = {52, 126, 199};
+// スロット Y 座標
+const int slotY = 65;
+
+void setup() {
+  auto cfg = M5.config();
+  cfg.serial_baudrate = 115200;
+  M5.begin(cfg);
+  delay(500);
+
+  // SD
+  while (!SD.begin(GPIO_NUM_4, SPI, 15000000)) {
+    Serial.println("SD Wait...");
+    delay(500);
+  }
+
+  // 背景スプライト生成＆読み込み
+  bgSprite.createSprite(screenW, screenH);
+  bgSprite.drawPngFile(SD, bgPath, 0, 0);
+
+  // slotPathsを生成
+  for (int i = 0; i < N_SLOTS; i++) {
+    slotPaths[i] = String("/slot_center_") + i + ".png";
+  }
+
+  // 各 slotSprite を生成＆読み込み
+  for (int i = 0; i < N_SLOTS; i++) {
+    slotSprite[i].createSprite(slotW, slotH);
+    slotSprite[i].drawPngFile(SD, slotPaths[i].c_str(), 0, 0);
+  }
+
+  // 合成用キャンバス
+  frameSprite.createSprite(screenW, screenH);
+  randomSeed(millis());
+}
+
+void loop() {
+  // 1) 合成キャンバスをクリア（ここでは bgSprite をベースにコピー）
+  uint16_t* bgBuf = (uint16_t*)bgSprite.getBuffer();
+  frameSprite.pushImage(0, 0, screenW, screenH, bgBuf);
+
+  // 2) 各リール位置にランダム絵柄を重ねる
+  for (int i = 0; i < 3; i++) {
+    int idx = random(0, N_SLOTS);
+    uint16_t* slotBuf = (uint16_t*)slotSprite[idx].getBuffer();
+    frameSprite.pushImage(colsX[i], slotY, slotW, slotH, slotBuf);
+  }
+
+  // 3) 合成結果を画面に一度で転送
+  uint16_t* frameBuf = (uint16_t*)frameSprite.getBuffer();
+  M5.Display.pushImage(0, 0, screenW, screenH, frameBuf);
+
+  // 4) 次の描画までちょっと待機
+  delay(100);
+}

@@ -8,28 +8,6 @@ class SlotMachine {
   static constexpr int COLS = 3;  // スロット列数
   static constexpr int ROWS = 3;  // スロット行数
 
-  // --- スロット構成 ---
-  static constexpr int SYMBOL_COUNT = 9;
-
-  // --- 画面・画像 ---
-  static constexpr int screenW = 320;
-  static constexpr int screenH = 240;
-  static constexpr int slotW = 70;
-  static constexpr int slotH = 106;
-  static constexpr int colsX[COLS] = {52, 126, 199};
-  static constexpr int slotY = 65;
-  static constexpr const char *BG_PATH = "/START_base.png";
-
-  static constexpr const char *SLOT_PATHS[SYMBOL_COUNT] = {
-      "/slot_center_0.png", "/slot_center_1.png", "/slot_center_2.png",
-      "/slot_center_3.png", "/slot_center_4.png", "/slot_center_5.png",
-      "/slot_center_6.png", "/slot_center_7.png", "/slot_center_8.png"};
-
-  // M5Canvas
-  M5Canvas bgSprite{&M5.Display};
-  M5Canvas frameSprite{&M5.Display};
-  M5Canvas slotSprite[SYMBOL_COUNT];
-
   IMU &imuRef;         // IMUクラス参照
   Sound &soundRef;     // Soundクラス参照
   bool stopped[COLS];  // 各列の停止フラグ
@@ -71,15 +49,6 @@ class SlotMachine {
     imuRef.initIMU();
     M5.Display.setTextSize(2);
     initSlots();
-
-    // 各 slotSprite を生成＆読み込み
-    // for (int i = 0; i < SYMBOL_COUNT; i++) {
-    //   slotSprite[i].createSprite(slotW, slotH);
-    //   slotSprite[i].drawPngFile(SD, SLOT_PATHS[i], 0, 0);
-    // }
-    // 合成用キャンバス
-    // frameSprite.createSprite(screenW, screenH);
-    // randomSeed(millis());
   }
 
   // 毎フレーム呼ばれる更新処理
@@ -285,20 +254,14 @@ class SlotMachine {
 
   // 停止していない列をランダム色で更新
   void animateSlots() {
-    // // 1) 合成キャンバスをクリア（ここでは bgSprite をベースにコピー）
-    // uint16_t *bgBuf = (uint16_t *)bgSprite.getBuffer();
-    // frameSprite.pushImage(0, 0, screenW, screenH, bgBuf);
-
-    // // 2) 各リール位置にランダム絵柄を重ねる
-    // for (int i = 0; i < 3; i++) {
-    //   int idx = random(0, SYMBOL_COUNT);
-    //   uint16_t *slotBuf = (uint16_t *)slotSprite[idx].getBuffer();
-    //   frameSprite.pushImage(colsX[i], slotY, slotW, slotH, slotBuf);
-    // }
-
-    // // 3) 合成結果を画面に一度で転送
-    // uint16_t *frameBuf = (uint16_t *)frameSprite.getBuffer();
-    // M5.Display.pushImage(0, 0, screenW, screenH, frameBuf);
+    for (int i = 0; i < COLS; ++i) {
+      if (!stopped[i]) {
+        for (int j = 0; j < ROWS; ++j) {
+          symbols[i][j] = rand() % 0xFFFF;
+          drawSlot(i, j, symbols[i][j]);
+        }
+      }
+    }
   }
 
   // 次の列を停止させ、最終絵柄を表示
