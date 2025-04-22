@@ -1,6 +1,5 @@
 #include "slot.hpp"
 
-
 // 初期化
 void Slot::begin() {
   soundRef.begin();
@@ -38,7 +37,7 @@ void Slot::update() {
         if (syms[0] == syms[1]) {
           syms[2] = random(0, WIN_VAL) > SYMBOL_COUNT ? syms[0] : random(0, SYMBOL_COUNT);
         } else {
-          syms[2] = random(0, 9);
+          syms[2] = random(0, SYMBOL_COUNT);
         }
 
         imageRef.drawRandomFrame(syms[0], syms[1], syms[2]);
@@ -51,7 +50,7 @@ void Slot::update() {
         // 次の列を停止
         count++;
         if (count == 1) {
-          syms[0] = random(0, 9);
+          syms[0] = random(0, SYMBOL_COUNT);
           imageRef.drawRandomFrame(syms[0], syms[1], syms[2]);
         } else if (count == 2) {
           syms[1] = random(0, WIN_VAL) > SYMBOL_COUNT ? syms[0] : random(0, SYMBOL_COUNT);
