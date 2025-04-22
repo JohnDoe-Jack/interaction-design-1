@@ -50,14 +50,6 @@ class SlotMachine {
       : imuRef(imu), soundRef(sound), imageRef(image) {       // コンストラクタで Sound 参照を初期化
   }
 
-  // void waitEnd() {
-  //   if (soundRef.wav) {
-  //       while (soundRef.wav->isRunning()) {
-  //           M5.delay(100);
-  //       }
-  //   }
-  // };
-
   // 初期化
   void begin() {
     soundRef.begin();
@@ -102,10 +94,8 @@ class SlotMachine {
 
           checkWin();
 
-          // soundRef.stop();
+          count++;
 
-          initSlots();
-          // soundRef.isStoppedExplicitly = false;
         } else {
           // 次の列を停止
           count++;
