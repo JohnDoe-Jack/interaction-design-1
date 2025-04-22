@@ -9,7 +9,7 @@ class SlotMachine {
  private:
   // --- スロット構成 ---
   static constexpr int SYMBOL_COUNT = 9;
-  static constexpr float WIN_RATE = 20;  // 大体の当選確率（0 < n < 100）
+  static constexpr float WIN_RATE = 25;  // 大体の当選確率（0 < n < 100）
   static constexpr int WIN_VAL = static_cast<int>(SYMBOL_COUNT / (-std::sqrt(WIN_RATE / 100) + 1.0f));
 
   // --- 画面・画像 ---
@@ -19,7 +19,6 @@ class SlotMachine {
   static constexpr int slotH = 106;
   static constexpr int colsX[3] = {52, 126, 199};
   static constexpr int slotY = 65;
-  static constexpr const char *BG_PATH = "/START_base.png";
 
   static constexpr const char *SLOT_PATHS[SYMBOL_COUNT] = {
       "/slot_center_0.png", "/slot_center_1.png", "/slot_center_2.png",
@@ -42,7 +41,7 @@ class SlotMachine {
   // 定数定義
   static constexpr float ACCEL_THRESHOLD = 2.0f;
   static constexpr int STOP_DELAY_MS = 500;
-  static constexpr int UPDATE_DELAY_MS = 30;
+  static constexpr int UPDATE_DELAY_MS = 20;
 
  public:
   explicit SlotMachine(IMU &imu, Sound &sound, Image &image)
@@ -114,7 +113,6 @@ class SlotMachine {
       }
     }
 
-    // M5.delay(UPDATE_DELAY_MS);
     delay(UPDATE_DELAY_MS);
   }
 
