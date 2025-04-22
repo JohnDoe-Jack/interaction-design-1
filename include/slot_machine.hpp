@@ -3,11 +3,14 @@
 #include "sound.hpp"  // Sound クラスを使うのでインクルード
 #include "Image.hpp"
 #include <M5Unified.h>
+#include <cmath>
 
 class SlotMachine {
  private:
   // --- スロット構成 ---
   static constexpr int SYMBOL_COUNT = 9;
+  static constexpr float WIN_RATE = 20;  // 大体の当選確率（0 < n < 100）
+  static constexpr int WIN_VAL = static_cast<int>(9.0f / (-std::sqrt(WIN_RATE / 100) + 1.0f));
 
   // --- 画面・画像 ---
   static constexpr int screenW = 320;
@@ -89,7 +92,12 @@ class SlotMachine {
           count = 0;
         } else if (count == 3) {
           // すでに全列停止後なら再度初期化
-          syms[2] = 2;  // random(0, 9);
+          if (syms[0] == syms[1]) {
+            syms[2] = random(0, WIN_VAL) > 9 ? syms[0] : random(0, 9);
+          } else {
+            syms[2] = random(0, 9);
+          }
+
           imageRef.drawRandomFrame(syms[0], syms[1], syms[2]);
 
           checkWin();
@@ -102,10 +110,10 @@ class SlotMachine {
           // 次の列を停止
           count++;
           if (count == 1) {
-            syms[0] = 2;  // random(0, 9);
+            syms[0] = random(0, 9);
             imageRef.drawRandomFrame(syms[0], syms[1], syms[2]);
           } else if (count == 2) {
-            syms[1] = 2;  // random(0, 9);
+            syms[1] = random(0, WIN_VAL) > 9 ? syms[0] : random(0, 9);
             imageRef.drawRandomFrame(syms[0], syms[1], syms[2]);
             count = 3;
           }
