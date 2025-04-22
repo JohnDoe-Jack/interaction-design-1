@@ -1,7 +1,7 @@
 #pragma once
 #include "imu.hpp"
 #include "sound.hpp"  // Sound クラスを使うのでインクルード
-#include "Image.hpp"
+#include "image.hpp"
 #include <M5Unified.h>
 #include <cmath>
 
@@ -10,7 +10,7 @@ class SlotMachine {
   // --- スロット構成 ---
   static constexpr int SYMBOL_COUNT = 9;
   static constexpr float WIN_RATE = 20;  // 大体の当選確率（0 < n < 100）
-  static constexpr int WIN_VAL = static_cast<int>(9.0f / (-std::sqrt(WIN_RATE / 100) + 1.0f));
+  static constexpr int WIN_VAL = static_cast<int>(SYMBOL_COUNT / (-std::sqrt(WIN_RATE / 100) + 1.0f));
 
   // --- 画面・画像 ---
   static constexpr int screenW = 320;
@@ -39,15 +39,14 @@ class SlotMachine {
 
   int syms[3] = {-1, -1, -1};
 
-  // 定数定義 (マジックナンバー、マジックストリングの解消)
+  // 定数定義
   static constexpr float ACCEL_THRESHOLD = 2.0f;
   static constexpr int STOP_DELAY_MS = 500;
   static constexpr int UPDATE_DELAY_MS = 30;
 
  public:
-  // 当選率を指定可能なコンストラクタ
-  explicit SlotMachine(IMU &imu, Sound &sound, Image &image)  // Sound クラスへの参照を追加
-      : imuRef(imu), soundRef(sound), imageRef(image) {       // コンストラクタで Sound 参照を初期化
+  explicit SlotMachine(IMU &imu, Sound &sound, Image &image)
+      : imuRef(imu), soundRef(sound), imageRef(image) {
   }
 
   // 初期化
@@ -85,7 +84,7 @@ class SlotMachine {
         } else if (count == 3) {
           // すでに全列停止後なら再度初期化
           if (syms[0] == syms[1]) {
-            syms[2] = random(0, WIN_VAL) > 9 ? syms[0] : random(0, 9);
+            syms[2] = random(0, WIN_VAL) > SYMBOL_COUNT ? syms[0] : random(0, SYMBOL_COUNT);
           } else {
             syms[2] = random(0, 9);
           }
@@ -103,7 +102,7 @@ class SlotMachine {
             syms[0] = random(0, 9);
             imageRef.drawRandomFrame(syms[0], syms[1], syms[2]);
           } else if (count == 2) {
-            syms[1] = random(0, WIN_VAL) > 9 ? syms[0] : random(0, 9);
+            syms[1] = random(0, WIN_VAL) > SYMBOL_COUNT ? syms[0] : random(0, SYMBOL_COUNT);
             imageRef.drawRandomFrame(syms[0], syms[1], syms[2]);
             count = 3;
           }

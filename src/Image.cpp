@@ -1,4 +1,4 @@
-#include "Image.hpp"
+#include "image.hpp"
 
 const int Image::colsX[3] = {52, 126, 199};
 const int Image::slotY = 65;
