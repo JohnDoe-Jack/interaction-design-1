@@ -1,22 +1,26 @@
 #include "SD.h"
 #include <M5Unified.h>
 
-const char* Path_Display = "/display.png";
-const char* Path_Spinning = "/SPINNING.png";
-const int colsX[] = {50, 123, 196};
+const char* bgPath = "/SPINNING.png";
+const int N_SLOTS = 9;  // slot_center_0.png ～ slot_center_8.png
 
-const int scrollSpeed = 2;  // フレームあたりの移動ピクセル数
+String slotPaths[N_SLOTS];
+
+const int slotW = 70;
+const int slotH = 106;
+
 const int screenW = 320;
 const int screenH = 240;
 
-// 各種キャンバス
-M5Canvas displaySprite(&M5.Display);
-M5Canvas uiSprite(&M5.Display);
-// 全画面合成用
+// 描画用キャンバス
+M5Canvas bgSprite(&M5.Display);
+M5Canvas slotSprite[N_SLOTS];
 M5Canvas frameSprite(&M5.Display);
 
-// 各列の Y 位置
-int yPos[3];
+// スロット X 座標（左→中→右）
+const int colsX[] = {52, 126, 199};
+// スロット Y 座標
+const int slotY = 65;
 
 void setup() {
   auto cfg = M5.config();
@@ -24,61 +28,48 @@ void setup() {
   M5.begin(cfg);
   delay(500);
 
-  // SD マウント
+  // SD
   while (!SD.begin(GPIO_NUM_4, SPI, 15000000)) {
     Serial.println("SD Wait...");
     delay(500);
   }
 
-  // displaySprite の準備
-  uint16_t imgW = 73, imgH = 504;  // 実際の画像サイズに合わせて
-  displaySprite.createSprite(imgW, imgH);
-  displaySprite.drawPngFile(SD, Path_Display, 0, 0);
+  // 背景スプライト生成＆読み込み
+  bgSprite.createSprite(screenW, screenH);
+  bgSprite.drawPngFile(SD, bgPath, 0, 0);
 
-  // uiSprite の準備
-  uiSprite.createSprite(screenW, screenH);
-  uiSprite.drawPngFile(SD, Path_Spinning, 0, 0);
-
-  // frameSprite の準備（画面サイズ）
-  frameSprite.createSprite(screenW, screenH);
-
-  // 各列の初期 Y 設定
-  for (int i = 0; i < 3; i++) {
-    yPos[i] = -(imgH / 9) * i;
+  // slotPathsを生成
+  for (int i = 0; i < N_SLOTS; i++) {
+    slotPaths[i] = String("/slot_center_") + i + ".png";
   }
+
+  // 各 slotSprite を生成＆読み込み
+  for (int i = 0; i < N_SLOTS; i++) {
+    slotSprite[i].createSprite(slotW, slotH);
+    slotSprite[i].drawPngFile(SD, slotPaths[i].c_str(), 0, 0);
+  }
+
+  // 合成用キャンバス
+  frameSprite.createSprite(screenW, screenH);
+  randomSeed(millis());
 }
 
 void loop() {
-  // 1) frameSprite を黒でクリア
-  frameSprite.fillRect(0, 0, screenW, screenH, TFT_BLACK);
+  // 1) 合成キャンバスをクリア（ここでは bgSprite をベースにコピー）
+  uint16_t* bgBuf = (uint16_t*)bgSprite.getBuffer();
+  frameSprite.pushImage(0, 0, screenW, screenH, bgBuf);
 
-  // 2) 各列の displaySprite を合成
-  uint16_t imgW = displaySprite.width();
-  uint16_t imgH = displaySprite.height();
-  uint16_t* buf16 = (uint16_t*)displaySprite.getBuffer();  // RGB565 buffer
-
+  // 2) 各リール位置にランダム絵柄を重ねる
   for (int i = 0; i < 3; i++) {
-    int x = colsX[i];
-    int y = yPos[i];
-
-    // 上下２枚合成
-    frameSprite.pushImage(x, y, imgW, imgH, buf16);
-    frameSprite.pushImage(x, y + imgH, imgW, imgH, buf16);
-
-    // Y 更新＆ループ戻し
-    yPos[i] += scrollSpeed;
-    if (yPos[i] >= imgH) {
-      yPos[i] -= imgH;
-    }
+    int idx = random(0, N_SLOTS);
+    uint16_t* slotBuf = (uint16_t*)slotSprite[idx].getBuffer();
+    frameSprite.pushImage(colsX[i], slotY, slotW, slotH, slotBuf);
   }
 
-  // 3) UI を合成（透明度無視でそのまま）
-  uint16_t* uiBuf = (uint16_t*)uiSprite.getBuffer();
-  frameSprite.pushImage(0, 0, screenW, screenH, uiBuf);
-
-  // 4) 画面に一度だけ転送
+  // 3) 合成結果を画面に一度で転送
   uint16_t* frameBuf = (uint16_t*)frameSprite.getBuffer();
   M5.Display.pushImage(0, 0, screenW, screenH, frameBuf);
 
-  delay(16);  // 約60FPS
+  // 4) 次の描画までちょっと待機
+  delay(100);
 }
