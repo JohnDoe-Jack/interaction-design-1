@@ -7,7 +7,7 @@ void setup() {
 }
 
 void loop() {
-  slotImage.drawRandomFrame();
+  slotImage.drawRandomFrame(-1, -1, 1);
   // slotImage.drawStartFrame();
   delay(100);
 }
